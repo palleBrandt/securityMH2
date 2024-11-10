@@ -1,6 +1,7 @@
 import socket
 import ssl
 import threading
+import time
 
 # Server details
 HOST = 'localhost'  # localhost
@@ -36,7 +37,9 @@ def handle_client(client_socket, client_addr):
         global numReceived
         global comp
         # Accept client connections
+        print(number_of_participant)
         print(f"Client {client_addr} connected")
+
         with lock:
             number_of_participant += 1
         
@@ -52,7 +55,6 @@ def handle_client(client_socket, client_addr):
                 with lock:
                     temp = comp
                     comp =(temp + int(data)) % (r+1)
-                    print((temp + int(data)) % (r+1))
                     numReceived += 1
         client_socket.close()
 
@@ -60,10 +62,14 @@ def handle_client(client_socket, client_addr):
 while numReceived < 3:
     print("test")
     # Accept client connections
-    client_socket, client_addr = server_socket.accept()
-    print(f"Connected to hospital")
-    # Handle each client in a new thread
-    client_thread = threading.Thread(target=handle_client, args=(client_socket, client_addr))
-    client_thread.start()
+    try:
+        client_socket, client_addr = server_socket.accept()
+        print(f"Connected to hospital")
+        # Handle each client in a new thread
+        client_thread = threading.Thread(target=handle_client, args=(client_socket, client_addr))
+        client_thread.start()
+    except:
+         print("something")
+    time.sleep(2)
 print(comp)
 

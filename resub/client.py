@@ -30,13 +30,10 @@ def handle_incoming_connection(sock, addr):
         try:
             message = sock.recv(1024).decode('utf-8')
             print(f"\n{addr}: {message}")
-            print("waiting on lock")
             with lock:
-                print("obtained lock")
                 shares_received += 1
                 temp = myshare
                 myshare = (temp + int(message)) % (r+1)
-            print("done with lock")
         except:
             print("Could not receive:" )
 
@@ -45,12 +42,15 @@ def handle_outgoing_messages():
     while connections < 2:
         continue
 
+    # peer1_con.sendall("hi".encode('utf-8'))
+    # peer2_con.sendall("hi".encode('utf-8'))
+
     i = 0
     while i < 2:
         success = False
         while not success:
             try:
-                peer_connections[i].sendall(str(secret).encode('utf-8'))
+                peer_connections[i].sendall(str(shares[i]).encode('utf-8'))
                 success = True
                 i+= 1
             except:
@@ -86,25 +86,52 @@ def start_peer(host, port, peer_ports):
             with lock:
                 connections += 1
             print(f"Peer connected from {addr}")
-            peer_connections.append(conn)
+            # peer_connections.append(conn)
             # Start a thread to handle incoming messages from this connection
             threading.Thread(target=handle_incoming_connection, args=(conn, addr), daemon=True).start()
 
     threading.Thread(target=accept_connections, daemon=True).start()
 
     # Attempt to connect to each peer in peer_ports if not already connected
-    for peer_port in peer_ports:
-        connected = False
-        while not connected:
-            try:
-                client_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                client_sock.connect((host, peer_port))
-                print(f"Connected to peer at {host}:{peer_port}")
-                peer_connections.append(client_sock)
-                connected = True
-            except ConnectionRefusedError:
-                print(f"Peer on port {peer_port} not available, retrying...")
-                time.sleep(2)
+    connected = False
+    global peer1_con
+    global peer2_con
+    while not connected:
+        try:
+            client_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client_sock.connect((host, peer_1))
+            print(f"Connected to peer1 at {host}:{peer_1}")
+            peer_connections.append(client_sock)
+            connected = True
+        except ConnectionRefusedError:
+            print(f"Peer on port {peer_1} not available, retrying...")
+            time.sleep(2)
+
+    connected = False
+    while not connected:
+        try:
+            client_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client_sock.connect((host, peer_2))
+            print(f"Connected to peer1 at {host}:{peer_2}")
+            peer_connections.append(client_sock)
+            connected = True
+        except ConnectionRefusedError:
+            print(f"Peer on port {peer_2} not available, retrying...")
+            time.sleep(2)
+
+
+    # for peer_port in peer_ports:
+    #     connected = False
+    #     while not connected:
+    #         try:
+    #             client_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #             client_sock.connect((host, peer_port))
+    #             print(f"Connected to peer at {host}:{peer_port}")
+    #             peer_connections.append(client_sock)
+    #             connected = True
+    #         except ConnectionRefusedError:
+    #             print(f"Peer on port {peer_port} not available, retrying...")
+    #             time.sleep(2)
 
     # Start a thread to handle outgoing messages to all peers
     handle_outgoing_messages()
@@ -136,7 +163,9 @@ if __name__ == "__main__":
         sys.exit(1)
 
     host = 'localhost'
-    port_my = int(sys.argv[1])         # The port for this peer
+    port_my = int(sys.argv[1])
+    peer_1 = int(sys.argv[2])
+    peer_2 = int(sys.argv[3])
     peer_ports = [int(sys.argv[2]), int(sys.argv[3])]  # The ports of the other peers
     
     print("My secret is: " + str(secret))
