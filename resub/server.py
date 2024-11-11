@@ -20,8 +20,6 @@ print(f'Server listening on {HOST}:{PORT}')
 
 # Wrap the server socket with SSL (TLS)
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-# context.load_cert_chain(certfile='server.crt', keyfile='server.key')
-# context.load_verify_locations("CA.pem")
 
 number_of_participant = 0
 sockets = []
@@ -42,34 +40,29 @@ def handle_client(client_socket, client_addr):
 
         with lock:
             number_of_participant += 1
-        
-        # # Receive data from client
-        # data = client_socket.recv(1024).decode('utf-8')
-        # print(f"Received from client: {data}")
 
         #Next step is to wait. and add responses. Because the next things the server is gonna receive is the
         while numReceived < 3:
             data = client_socket.recv(1024).decode('utf-8')
-            print(data)
+            print("received : " + data)
             if data:
                 with lock:
                     temp = comp
-                    comp =(temp + int(data)) % (r+1)
+                    comp =(temp + int(data)) % (r)
                     numReceived += 1
+                    print("comp = " + str(temp) + " + " + data + " = " + str(comp))
         client_socket.close()
 
 
 while numReceived < 3:
-    print("test")
+
     # Accept client connections
     try:
         client_socket, client_addr = server_socket.accept()
-        print(f"Connected to hospital")
-        # Handle each client in a new thread
         client_thread = threading.Thread(target=handle_client, args=(client_socket, client_addr))
         client_thread.start()
     except:
-         print("something")
+         print("something went wrong")
     time.sleep(2)
 print(comp)
 
